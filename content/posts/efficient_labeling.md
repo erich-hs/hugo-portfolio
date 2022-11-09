@@ -3,20 +3,21 @@ title: "Efficient Labeling Through Representative Samples"
 tags: ['NLP', 'Unsupervised Learning']
 date: 2022-09-27T11:57:32-08:00
 draft: false
+
+featuredImagePreview: "/images/posts/efficient_labeling/Capa.png"
 ---
+{{< figure src="/images/posts/efficient_labeling/Capa.png" >}}
 
-Efficient Labeling Through Representative Samples
-=================================================
+_On the left: Wildfire — Photo by [Mike Newbry](https://unsplash.com/@mikenewbry?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText). On the center: Tropical Storm — Photo by [Jeffrey Grospe](https://unsplash.com/@jgrospe?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText). On the right: Pandemic Dashboard — Photo by [Martin Sanchez](https://unsplash.com/@martinsanchez?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText). Original images on [Unsplash](https://unsplash.com/?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText)_
 
-Clustering for Semi-Supervised Learning on Disasters Tweets.
-------------------------------------------------------------
+**Clustering for Semi-Supervised Learning on Disasters Tweets**
 
-**Figure 1.** On the left: Wildfire — Photo by [Mike Newbry](https://unsplash.com/@mikenewbry?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText). On the center: Tropical Storm — Photo by [Jeffrey Grospe](https://unsplash.com/@jgrospe?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText). On the right: Pandemic Dashboard — Photo by [Martin Sanchez](https://unsplash.com/@martinsanchez?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText). Original images on [Unsplash](https://unsplash.com/?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText).
-
+---
 Cluster analysis as an unsupervised learning technique is widely implemented throughout many fields of data science. When applied to data suited for hierarchical or partitional clustering, it can provide valuable insights into latent groups of the dataset and further improve your understanding of key features that can describe and classify individuals into meaningful clusters for your use case.
 
 In this article, I will explore an alternative application of partitional clustering to improve the performance  of supervised learning classification tasks of text samples when the **resources to label training data are limited**. By introducing what I call “**representative labeling**” with K-Means clustering, we will see a consistent improvement in classification metrics of Logistic Regression and K-Nearest Neighbors algorithms when compared to naively labeled instances.
 
+---
 Problem Definition
 ------------------
 
@@ -24,6 +25,7 @@ Today’s studies on unstructured text data that revolve around Natural Language
 
 Therefore, the approach studied here will aim at maximizing the efficiency of annotating hours by selecting and labeling  the **most representative candidates**, leading up to a training set that is rich and representative of your corpus. Hence, we experiment with another use case of clustering as a semi-supervised learning technique (Géron, A. 2019) \[3\]. The potential audience ranges from machine learning researchers to data science students with limited resources to label training data.
 
+---
 Representative Labeling
 -----------------------
 
@@ -31,15 +33,17 @@ I have recently dedicated half a year to studying the complex challenges of usin
 
 Representative labeling proposes the use of K-Means clustering to segment our corpus into K distinct clusters, from which K representative instances will be selected for labeling. Those instances are the ones **closest to the centroid of each cluster**, therefore being the best representatives of their surrounding samples. The figure below illustrates this process.
 
-**Figure 2.** Representative Sampling.
+{{< figure src="/images/posts/efficient_labeling/representative-samples.png" title="Representative Sampling" >}}
 
 We can then expect that these individuals are important representatives of our data, and, therefore that our models will be more performant during inference when trained on representative instances. We will discuss some key aspects that deserve attention and further details about this approach later on. For now, let’s take a look at how we will prove our point.
 
+---
 Dataset Description
 -------------------
 
 The dataset chosen to validate our method is from a Kaggle competition named “**Natural language processing with disaster tweets**” \[6\], where the competitors are tasked with identifying which tweets from the 3,243 public test examples should be defined as a disaster (1) or non-disaster (0). It is a straightforward but challenging **binary classification problem**, where the model needs to capture the intent of the tweeted message as to whether it referred to an actual disaster event or not. The dataset and more information can be found on the [competition website](https://www.kaggle.com/c/nlp-getting-started/overview).
 
+---
 Libraries and Dependencies
 --------------------------
 
@@ -47,18 +51,19 @@ This project will make use of [Preprocessor](https://github.com/s/preprocessor),
 
 Other visualization, statistics, machine learning, and data wrangling libraries should be available with a standard [Google Colab Notebook](https://colab.research.google.com/) instance.
 
+---
 Getting Started
 ---------------
 
 Installing Preprocessor in your working environment or Colab instance.
 
-```
+```bash
 !pip -qq install tweet-preprocessor
 ```
 
 Importing libraries and dependencies.
 
-```
+```python
 import os  
 import numpy as np  
 import pandas as pd  
@@ -68,32 +73,37 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm  
 import seaborn as sns  
 from sklearn.cluster import KMeans  
-from sklearn.feature\_extraction.text import TfidfVectorizer  
-from sklearn.pipeline import make\_pipeline  
+from sklearn.feature_extraction.text import TfidfVectorizer  
+from sklearn.pipeline import make_pipeline  
 from sklearn.decomposition import TruncatedSVD  
 from sklearn.preprocessing import Normalizer  
-from sklearn.metrics import silhouette\_score, silhouette\_samples, classification\_report, f1\_score, accuracy\_score  
-from sklearn.linear\_model import LogisticRegression  
-from sklearn.neighbors import KNeighborsClassifier**\# Seaborn and MatplotLib style settings**  
-sns.set\_theme(style = "whitegrid", palette = "colorblind")  
-plt.rcParams\["image.cmap"\] = "Paired"
+from sklearn.metrics import silhouette_score, silhouette_samples
+from sklearn.metrics import classification_report, f1_score, accuracy_score  
+from sklearn.linear_model import LogisticRegression  
+from sklearn.neighbors import KNeighborsClassifier
+
+sns.set_theme(style = "whitegrid", palette = "colorblind")  
+plt.rcParams["image.cmap"] = "Paired"
 ```
 
 Since the goal of our dataset is to validate our proposed methodology, we will use only the training set available on Kaggle. We want to evaluate our approach on a held-out validation set that we will define later on, hence the test set (unlabeled) will be of no use for now.
 
 An easy way to directly download Kaggle datasets on Google Colab instances is through the [Kaggle API](https://github.com/Kaggle/kaggle-api). A [neatly summarized guide](https://www.kaggle.com/general/74235) by Filemon shows you exactly how to do that (Make sure to leave an upvote if you find it useful!). For now, we will simply use the downloaded train.csv file from the competition page and load it as a Pandas DataFrame.
 
-```
-**\# Setting up data directory**  
+```python
+# Setting up data directory  
 path = ''  
-os.mkdir('data/')train\_data\_path = os.path.join(path, "data", "train.csv")raw\_data = pd.read\_csv(train\_data\_path)  
-raw\_data
+os.mkdir('data/')train_data_path = os.path.join(path, "data", "train.csv")
+raw_data = pd.read_csv(train_data_path)
+raw_data
 ```
 
-**Figure 2.** Disaster Tweets training set.
+{{< figure src="/images/posts/efficient_labeling/fig2.png" title="Disaster Tweets training set" >}}
+
 
 We can see that the original data comes with one identifier column (id) and three feature columns; keyword, location, and the uncleaned tweet text (text). Only the tweet text will be kept for our analysis.
 
+---
 Preprocessing
 -------------
 
@@ -103,36 +113,43 @@ During the cleaning process, we will remove from the texts of the tweets all use
 
 The following code will implement a cleaning function and apply it to our raw dataset’s ‘text’ column, and we will also take a look at some of the original and cleaned tweets.
 
-```
-**\# Text cleaning - Removing URLs, mentions, etc using tweet-preprocessor package**  
-def tweet\_clean(tweet, replace\_amper = False):  
+```python
+# Text cleaning - Removing URLs, mentions, etc using tweet-preprocessor package
+def tweet_clean(tweet, replace_amper = False):  
   """  
-  **Clean tweet with tweet-preprocessor p.clean().**  
-  """ **# Remove user mentions, symbols and unwanted characters**  
-  p.set\_options(p.OPT.URL, p.OPT.MENTION, p.OPT.RESERVED,  p.OPT.EMOJI, p.OPT.SMILEY)  
-  tweet = p.clean(tweet) **# Replace amper**  
-  if replace\_amper:  
+  Clean tweet with tweet-preprocessor p.clean().
+  """ # Remove user mentions, symbols and unwanted characters
+  p.set_options(p.OPT.URL, p.OPT.MENTION, p.OPT.RESERVED,  p.OPT.EMOJI, p.OPT.SMILEY)  
+  tweet = p.clean(tweet)
+  
+  # Replace amper
+  if replace_amper:  
     tweet = tweet.replace('&amp;', 'and')  
-    tweet = tweet.replace('&AMP;', 'and') return tweet**\# Cleaned tweets**  
-raw\_data\['cleaned\_text'\] = raw\_data\['text'\].apply(tweet\_clean, replace\_amper = True)  
-for tweet, cleaned\_tweet in zip(raw\_data\['text'\].tail(),  
-                                raw\_data\['cleaned\_text'\].tail()):  
+    tweet = tweet.replace('&AMP;', 'and')
+    
+  return tweet
+  
+# Cleaned tweets
+raw_data['cleaned_text'] = raw_data['text'].apply(tweet_clean, replace_amper = True)  
+for tweet, cleaned_tweet in zip(raw_data['text'].tail(),  
+                                raw_data['cleaned_text'].tail()):  
   print(f'Original tweet: {tweet}')  
-  print(f'Cleaned tweet: {cleaned\_tweet}\\n-')
+  print(f'Cleaned tweet: {cleaned_tweet}\n-')
 ```
 
 Original tweet examples:
 
-_“Set our hearts ablaze and every city was a gift And every skyline was like a kiss upon the lips @Â‰Ã›\_ https://t.co/cYoMPZ1A0Z“_
-
-_“@PhDSquares #mufc they’ve built so much hype around new acquisitions but I doubt they will set the EPL ablaze this season.“_
+>_“Set our hearts ablaze and every city was a gift And every skyline was like a kiss upon the lips @Â‰Ã›\_ https://t.co/cYoMPZ1A0Z“_
+>
+>_“@PhDSquares #mufc they’ve built so much hype around new acquisitions but I doubt they will set the EPL ablaze this season.“_
 
 Cleaned tweet examples:
 
-_“Set our hearts ablaze and every city was a gift And every skyline was like a kiss upon the lips“_
+>_“Set our hearts ablaze and every city was a gift And every skyline was like a kiss upon the lips“_
+>
+>_“#mufc they’ve built so much hype around new acquisitions but I doubt they will set the EPL ablaze this season.“_
 
-_“#mufc they’ve built so much hype around new acquisitions but I doubt they will set the EPL ablaze this season.“_
-
+---
 Training and Hold-out Validation Sets
 -------------------------------------
 
@@ -140,27 +157,40 @@ Twenty percent (1,523) tweets will be kept aside as a hold-out validation set (V
 
 Keeping the original order of the tweets for training and validation split is fundamental not to introduce bias in candidate sample selection.
 
-```
-**\# Training and hold-out validation sets****\# 80/20 training/validation split**  
-train\_size = int(0.8 \* raw\_data.shape\[0\])train\_index = \[x for x in range(0, train\_size)\]  
-val\_index = \[x for x in range(train\_size, raw\_data.shape\[0\])\]X\_train = raw\_data.loc\[train\_index, 'cleaned\_text'\]  
-y\_train = raw\_data.loc\[train\_index, 'target'\]X\_val = raw\_data.loc\[val\_index, 'cleaned\_text'\]  
-y\_val = raw\_data.loc\[val\_index, 'target'\]print(f"Training set shape: {X\_train.shape}")  
-print(f"Training label shape: {y\_train.shape}")  
-print(f"Validation set shape: {X\_val.shape}")  
-print(f"Validation label shape: {y\_val.shape}")
+```python
+# Training and hold-out validation sets
+# 80/20 training/validation split 
+train_size = int(0.8 * raw_data.shape[0])
+
+train_index = [x for x in range(0, train_size)]  
+val_index = [x for x in range(train_size, raw_data.shape[0])]
+
+X_train = raw_data.loc[train_index, 'cleaned_text']
+y_train = raw_data.loc[train_index, 'target']
+
+X_val = raw_data.loc[val_index, 'cleaned_text']  
+y_val = raw_data.loc[val_index, 'target']
+
+print(f"Training set shape: {X_train.shape}")
+print(f"Training label shape: {y_train.shape}")  
+print(f"Validation set shape: {X_val.shape}")  
+print(f"Validation label shape: {y_val.shape}")
 ```
 
-**Figure 3.** Training and Validation set dimensions.
+{{< figure src="/images/posts/efficient_labeling/fig3.png" title="Training and Validation set dimensions" >}}
 
 We can now look at the maximum length of each individual tweet in terms of the number of words.
 
-```
-\# Training and validation maximum length sequencesprint("Training set maximum length:", max(\[len(row.split()) for row in X\_train\]))print("Validation set maximum length:", max(\[len(row.split()) for row in X\_val\]))
+```python
+# Training and validation maximum length sequences
+print("Training set maximum length:", max([len(row.split()) for row in X_train]))
+
+print("Validation set maximum length:", max([len(row.split()) for row in X_val]))
 ```
 
-**Figure 4.** Training and Validation set maximum tweet lengths.
+{{< figure src="/images/posts/efficient_labeling/fig4.png" title="Training and Validation set maximum tweet lengths" >}}
 
+---
 TF-IDF Vectorization
 --------------------
 
@@ -170,7 +200,17 @@ As a well-known and widely implemented vectorization form for text data \[4\], i
 
 The following equations \[8\] are used to calculate the term frequency (tf), inverse document frequency (idf), and TF-IDF score (tfidf), respectively:
 
-**Formula 1.** Term Frequency.**Formula 2.** Inverse Document Frequency.**Formula 3.** TF-IDF score.
+\begin{equation}
+  tf(t,d) = \frac{f_{t,d}}{\sum_{t'}{f_{t',d}}}
+\end{equation}
+
+\begin{equation}
+  idf(t,D) = \log{\frac{N}{n_{t}}}
+\end{equation}
+
+\begin{equation}
+  tfidf(t,d,D) = tf(t,d) \cdot idf(t,D)
+\end{equation}
 
 Where:
 
@@ -185,15 +225,21 @@ The TF-IDF vectorization uses a one-hot encoding form of transformation. Each vo
 
 We will use Scikit-Learn TfidfVectorizer implementation in our cleaned training and validation sets. It is important to observe that we will call a fit\_transform() method in our training set to generate our vector space. We then vectorize both our training (already transformed via the fit\_transform() method) and validation set via the transform() method.
 
-```
-**\# TF-IDF Vectorization**  
-max\_features = Nonevectorizer = TfidfVectorizer(max\_features = max\_features)**\# Fitting vectorizer to training set vocabulary**  
-X\_train\_tfidf = vectorizer.fit\_transform(X\_train)**\# Transforming the validation set**  
-X\_val\_tfidf = vectorizer.transform(X\_val)print(f"TF-IDF normalized training set shape: {X\_train\_tfidf.shape}")  
-print(f"TF-IDF normalized validation set shape: {X\_val\_tfidf.shape}")
+```python
+# TF-IDF Vectorization
+_features = Nonevectorizer = TfidfVectorizer(max_features = max_features)
+
+# Fitting vectorizer to training set vocabulary**  
+X_train_tfidf = vectorizer.fit_transform(X_train)
+
+# Transforming the validation set**  
+X_val_tfidf = vectorizer.transform(X_val)
+
+print(f"TF-IDF normalized training set shape: {X_train_tfidf.shape}")  
+print(f"TF-IDF normalized validation set shape: {X_val_tfidf.shape}")
 ```
 
-**Figure 5.** TF-IDF Training and Validation set dimensions.
+{{< figure src="/images/posts/efficient_labeling/fig5.png" title="TF-IDF Training and Validation set dimensions" >}}
 
 The TF-IDF vectorizer fitted in our 6,090 training tweets identified 13,053 unique words and was then used to transform the 1,523 observations in the validation set.
 
@@ -203,6 +249,7 @@ At this point, you might be thinking that with the rapid recent development in t
 
 However, our goal is to prove the effectiveness of partitional clustering as a technique to sub-sample our data for training. For this reason, we will try to avoid any bias that might unexpectedly emerge from these intricate semantic representations and instead strict to a simple approach derived from our data.
 
+---
 Dimensionality Reduction
 ------------------------
 
@@ -216,55 +263,83 @@ To select the ideal number of _r_ components, we will use a method introduced by
 
 Below is a [Python implementation](http://www.pyrunner.com/weblog/2016/08/01/optimal-svht/) of SVHThresholding, followed by a visualization of our selected components _r_.
 
-```
-**\# Singular Value Decomposition with Numpy SVD**  
-U, S, VT = np.linalg.svd(X\_train\_tfidf.toarray(), full\_matrices=0)**\# Optimal Hard Thresholding (Gavish and Donoho, 2014)**  
-def omega\_approx(X):  
+```python
+# Singular Value Decomposition with Numpy SVD
+U, S, VT = np.linalg.svd(X_train_tfidf.toarray(), full_matrices=0)
+
+# Optimal Hard Thresholding (Gavish and Donoho, 2014)**  
+def omega_approx(X):  
   """  
- **Return an approximate omega value for given matrix X. Equation (5)   from Gavish and Donoho, 2014.**  """  
+  Return an approximate omega value for given matrix X. Equation (5)
+from Gavish and Donoho, 2014.
+  """
   beta = min(X.shape) / max(X.shape)  
-  omega = 0.56 \* beta\*\*3 - 0.95 \* beta\*\*2 + 1.82 \* beta + 1.43 return omega**\# Defining singular value hard threshold**  
+  omega = 0.56 * beta**3 - 0.95 * beta**2 + 1.82 * beta + 1.43
+  
+  return omega
+  
+# Defining singular value hard threshold
 def svht(X, sv = None):  
-  """  
- **Return the optimal singular value hard threshold (SVHT) value. \`X\` is any m-by-n matrix. \`sigma\` is the standard deviation of the noise, if known. Optionally supply the vector of singular values \`sv\` for the matrix (only necessary when \`sigma\` is unknown). If \`sigma\` is unknown and \`sv\` is not supplied, then the method automatically computes the singular values.**  
-  """  
+
   sv = np.squeeze(sv)  
   if sv.ndim != 1:  
     raise ValueError('vector of singular values must be 1-dimensional')  
-  return np.median(sv) \* omega\_approx(X)cutoff = svht(X\_train\_tfidf.toarray(), sv = S) **\# Hard threshold**  
-r\_opt = np.max(np.where(S > cutoff)) **\# Keep modes w/ sig > cutoff**print(f"Optimum number of eigen values: {r\_opt}")
-```**Figure 6.** SVHT optimum number of components r.```
-**\# Plot TF-IDF vectorized dataset singular values**  
-N = X\_train\_tfidf.shape\[0\]plt.figure(figsize = (10, 6))  
-plt.semilogy(S\[:5400\], '-', color = 'k', LineWidth = 2) **\# Narrowing the visualization to the first relevant components**  
-plt.semilogy(np.diag(S\[:(r\_opt + 1)\]), 'o', color = 'blue', LineWidth = 2)  
-plt.plot(np.array(\[0, S.shape\[0\]\]),np.array(\[cutoff, cutoff\]), '--', color='r', LineWidth = 2)  
+  return np.median(sv) * omega_approx(X)
+  
+cutoff = svht(X_train_tfidf.toarray(), sv = S) # Hard threshold
+_opt = np.max(np.where(S > cutoff)) # Keep modes w/ sig > cutoff
+
+print(f"Optimum number of eigen values: {r_opt}")
+```
+
+{{< figure src="/images/posts/efficient_labeling/fig6.png" title="SVHT optimum number of components r" >}}
+
+```python
+# Plot TF-IDF vectorized dataset singular values
+N = X_train_tfidf.shape[0]
+
+plt.figure(figsize = (10, 6))
+# Narrowing the visualization to the first relevant components
+plt.semilogy(S[:5400], '-', color = 'k', LineWidth = 2)
+plt.semilogy(np.diag(S[:(r_opt + 1)]), 'o', color = 'blue', LineWidth = 2)  
+plt.plot(np.array([0, S.shape[0]]),np.array([cutoff, cutoff]), '--', color='r', LineWidth = 2)  
 plt.title("TF-IDF training set log of Singular Values", size = 14, fontweight = "bold")  
 plt.xlabel("Components")  
 plt.ylabel("log of Singular Values")  
 plt.show()
 ```
 
-**Figure 7.** TF-IDF training set log of Singular Values.
+{{< figure src="/images/posts/efficient_labeling/fig7.png" title="TF-IDF training set log of Singular Values" >}}
 
 We can then truncate our SVD to our r = 652 components using Scikit-Learn TruncatedSVD, and define our LSA pipeline by following up with an L2 normalizer to fit and transform our training and validation sets.
 
-```
-**\# Singular Value Decomposition to reduce dimensionality truncated at optimum hard threshold**  
-svd = TruncatedSVD(n\_components = r\_opt, random\_state = 123)**\# Standard normalization for spherical K-Means clustering**  
-normalizer = Normalizer(copy = True)**\# Latent Semantic Analysis dimensionality reduction pipeline**  
-lsa = make\_pipeline(svd, normalizer)X\_train\_lsa = lsa.fit\_transform(X\_train\_tfidf)  
-X\_val\_lsa = lsa.transform(X\_val\_tfidf)explained\_variance = svd.explained\_variance\_ratio\_.sum()  
-print(f"Explained variance of the SVD step: {explained\_variance \* 100:.2f}%")print(f"LSA training set shape: {X\_train\_lsa.shape}")  
-print(f"LSA validation set shape: {X\_val\_lsa.shape}")
+```python
+# Singular Value Decomposition to reduce dimensionality
+# truncated at optimum hard threshold
+svd = TruncatedSVD(n_components = r_opt, random_state = 123)
+
+# Standard normalization for spherical K-Means clustering**  
+normalizer = Normalizer(copy = True)
+
+# Latent Semantic Analysis dimensionality reduction pipeline**  
+lsa = make_pipeline(svd, normalizer)
+
+X_train_lsa = lsa.fit_transform(X_train_tfidf)  
+X_val_lsa = lsa.transform(X_val_tfidf)
+
+explained_variance = svd.explained_variance_ratio_.sum()  
+print(f"Explained variance of the SVD step: {explained_variance * 100:.2f}%")
+print(f"LSA training set shape: {X_train_lsa.shape}")  
+print(f"LSA validation set shape: {X_val_lsa.shape}")
 ```
 
-**Figure 8.** Training and Validation set dimensions after LSA.
+{{< figure src="/images/posts/efficient_labeling/fig8.png" title="Training and Validation set dimensions after LSA" >}}
 
 We can see that our 652 components found as the optimal _r_ explain 53.75% of the variance in the dataset. This number might seem low, but they are important descriptors of our data, whereas the remaining non-used ones can be mostly attributed to the noise in our dataset \[2\].
 
 It is important to observe that **dimensionality reduction was solely used to reduce computation time during clustering**. Therefore, we are only implementing it in our training set when applying K-Means, from where the representative samples will be extracted for labeling. We will use the original TF-IDF vectorized training and validation sets for training and inference during the classification tasks.
 
+---
 Classification Models
 ---------------------
 
@@ -283,41 +358,59 @@ Let’s code our evaluation routine, where we will:
 2.  Evaluate on our validation set and print out a classification report
 3.  Calculate and instantiate the resulting F1-score and Accuracy metrics
 
-```
-**\# Defining evaluate function**  
-def evaluate(X\_train, y\_train, X\_val, classif\_report = True):  
+```python
+# Defining evaluate function
+def evaluate(X_train, y_train, X_val, classif_report = True):  
   '''  
- **Plot classification report for given training set using Logistic Regression and K-Nearest Neighbors classifiers.**  
+  Plot classification report for given training set using Logistic Regression and
+K-Nearest Neighbors classifiers.
   '''  
-  log\_r = LogisticRegression()  
-  log\_r.fit(X\_train, y\_train)  
-  y\_pred\_log\_r = log\_r.predict(X\_val) knn\_c = KNeighborsClassifier()  
-  knn\_c.fit(X\_train, y\_train)  
-  y\_pred\_knn\_c = knn\_c.predict(X\_val) if classif\_report:  
-    print('Logistic Regression classification report: \\n',  
-          classification\_report(y\_val, y\_pred\_log\_r, digits = 3),  
-      '\\n=====================================================\\n') print('K-Nearest Neighbors vote classification report: \\n',  
-          classification\_report(y\_val, y\_pred\_knn\_c, digits = 3)) log\_r\_f1 = f1\_score(y\_val, y\_pred\_log\_r)  
-  log\_r\_acc = accuracy\_score(y\_val, y\_pred\_log\_r) knn\_c\_f1 = f1\_score(y\_val, y\_pred\_knn\_c)  
-  knn\_c\_acc = accuracy\_score(y\_val, y\_pred\_knn\_c) return log\_r\_f1, log\_r\_acc, knn\_c\_f1, knn\_c\_acc
+  log_r = LogisticRegression()  
+  log_r.fit(X_train, y_train)  
+  y_pred_log_r = log_r.predict(X_val)
+  
+  knn_c = KNeighborsClassifier()  
+  knn_c.fit(X_train, y_train)  
+  y_pred_knn_c = knn_c.predict(X_val)
+  
+  if classif_report:  
+    print('Logistic Regression classification report: \n',  
+          classification_report(y_val, y_pred_log_r, digits = 3),  
+      '\n=====================================================\n')
+      
+    print('K-Nearest Neighbors vote classification report: \n',  
+          classification_report(y_val, y_pred_knn_c, digits = 3))
+          
+  log_r_f1 = f1_score(y_val, y_pred_log_r)  
+  log_r_acc = accuracy_score(y_val, y_pred_log_r)
+  
+  knn_c_f1 = f1_score(y_val, y_pred_knn_c)  
+  knn_c_acc = accuracy_score(y_val, y_pred_knn_c)
+  
+  return log_r_f1, log_r_acc, knn_c_f1, knn_c_acc
 ```
 
+---
 Baseline Performance
 --------------------
 
 We can then evaluate our model on our complete training set.
 
-```
-**\# Evaluating performance using the complete training set**  
-evaluate(X\_train\_tfidf, y\_train, X\_val\_tfidf)
+```python
+# Evaluating performance using the complete training set
+evaluate(X_train_tfidf, y_train, X_val_tfidf)
 ```
 
-**Figure 9.** Classification report on fully-trained models.
+{{< figure src="/images/posts/efficient_labeling/fig9.png" title="Classification report on fully-trained models" >}}
 
 And summarize our baseline metrics for the fully trained models in the following table.
 
-**Table 1.** Baseline metrics on fully-trained models.
+| Classifier          | Accuracy  | F1 Score |
+| :---                |      ---: |     ---: |
+|Logistic Regression  | 79.0%     | 0.754    |
+|K-Nearest-Neighbors  | 72.4%     | 0.659    |
 
+---
 Naive vs. Representative Samples
 --------------------------------
 
@@ -325,45 +418,55 @@ Let’s set K = 300, which is roughly 5% of our complete training set. You can d
 
 The following code will select **the first 300 observations** from our dataset and use them to fit our classifiers through the evaluation routine.
 
-```
-**\# Evaluating performance with a reduced training set**  
-n\_labeled = 300  
-evaluate(X\_train\_tfidf\[:n\_labeled\], y\_train\[:n\_labeled\], X\_val\_tfidf)
+```python
+# Evaluating performance with a reduced training set
+n_labeled = 300  
+evaluate(X_train_tfidf[:n_labeled], y_train[:n_labeled], X_val_tfidf)
 ```
 
-**Figure 10.** Classification reports on the naively reduced training set. K = 300.
+{{< figure src="/images/posts/efficient_labeling/fig10.png" title="Classification reports on the naively reduced training set. K = 300" >}}
 
 As expected, we see an expressive drop in our metrics. We can see that the **Logistic Regression is barely improving on a random guess** with 54.0% accuracy and far-from-workable F1 score and recall metrics.
 
 So let’s cluster our dataset and extract 300 representative samples instead. To do so, we will fit\_transform our LSA training set using Scikit-Learn KMeans with K = 300. We will then map the closest observations to each cluster center to their ground truth representatives in the original data. Remember, the dimension-reduced version is used solely for clustering. We want to train our algorithms on the high-dimensional samples.
 
-```
-**\# K-Means++ clustering**  
-k = 300kmeans = KMeans(n\_clusters = k, random\_state = 123)  
-X\_clustered = kmeans.fit\_transform(X\_train\_lsa)**\# Representative tweets**  
-representative\_ids = np.argmin(X\_clustered, axis = 0)  
-X\_representative = X\_train\[representative\_ids\]  
-X\_representative\_tfidf = X\_train\_tfidf\[representative\_ids\]**\# Representative tweets' labels**  
-y\_representative = raw\_data.loc\[X\_representative.index, 'target'\]
+```python
+# K-Means++ clustering
+k = 300kmeans = KMeans(n_clusters = k, random_state = 123)  
+X_clustered = kmeans.fit_transform(X_train_lsa)
+
+# Representative tweets
+representative_ids = np.argmin(X_clustered, axis = 0)  
+X_representative = X_train[representative_ids]  
+X_representative_tfidf = X_train_tfidf[representative_ids]
+
+# Representative tweets' labels**  
+y_representative = raw_data.loc[X_representative.index, 'target']
 ```
 
 We can now train on our representative samples and evaluate using our validation set.
 
-```
-**\# Evaluating cluster centered representative tweets**  
-evaluate(X\_representative\_tfidf, y\_representative, X\_val\_tfidf)
+```python
+# Evaluating cluster centered representative tweets
+evaluate(X_representative_tfidf, y_representative, X_val_tfidf)
 ```
 
-**Figure 11.** Classification reports on the representative samples training set. K = 300.
+{{< figure src="/images/posts/efficient_labeling/fig11.png" title="Classification reports on the representative samples training set. K = 300" >}}
 
 And summarize our results in the following table.
 
-**Table 2.** Evaluation metrics on representative (R) and naive (N) samples. K = 300.
+| Classifier              | Accuracy  | F1 Score |
+| :---                    |      ---: |     ---: |
+|Logistic Regression (R)  | 61.7%     | 0.353    |
+|K-Nearest-Neighbors (R)  | 68.7%     | 0.648    |
+|Logistic Regression (N)  | 54.0%     | 0.028    |
+|K-Nearest-Neighbors (N)  | 61.3%     | 0.464    |
 
 It is possible to observe that the accuracy increased by approximately 7% on both classifiers. As expected, the 300 representative samples provide more meaningful information about our dataset and therefore are highly performant than simply selecting the first 300 observations for training.
 
 But we can improve even further.
 
+---
 Label Propagation
 -----------------
 
@@ -371,43 +474,63 @@ Similar to the results seen in (Géron, A. 2019) \[3\], further performance impr
 
 Label propagation assumes that the neighbouring individuals to our representative samples are likely to share the same category. The image below illustrates the idea.
 
-**Figure 12.** Label propagation.
+{{< figure src="/images/posts/efficient_labeling/fig12.png" title="Label propagation" >}}
 
 In the following code, we will propagate the labels assigned to our representative samples to their 3% surrounding observations. Since we have the ground truth for the complete dataset, we can also check the propagation accuracy (how many labels were correctly assigned through this method).
 
-```
-**\# Propagating cluster labels**  
-y\_propagated = np.empty(len(X\_train), dtype = np.int32)  
+```python
+# Propagating cluster labels
+y_propagated = np.empty(len(X_train), dtype = np.int32)  
 for i in range(k):  
-  y\_propagated\[kmeans.labels\_ == i\] = list(y\_representative)\[i\]**\# Approximation percentile**  
-percentile\_closest = 3X\_cluster\_dist = X\_clustered\[np.arange(len(X\_train)), kmeans.labels\_\]**\# Propagating based on approximation percentile**  
+  y_propagated[kmeans.labels_ == i] = list(y_representative)[i]
+  
+# Approximation percentile
+percentile_closest = 3
+
+X_cluster_dist = X_clustered[np.arange(len(X_train)), kmeans.labels_]
+
+# Propagating based on approximation percentile
 for i in range(k):  
-  in\_cluster = (kmeans.labels\_ == i)  
-  cluster\_dist = X\_cluster\_dist\[in\_cluster\]  
-  cutoff\_distance = np.percentile(cluster\_dist, percentile\_closest)  
-  above\_cutoff = (X\_cluster\_dist > cutoff\_distance)  
-  X\_cluster\_dist\[in\_cluster & above\_cutoff\] = -1partially\_propagated = (X\_cluster\_dist != -1)  
-X\_partially\_propagated = X\_train\_tfidf\[partially\_propagated\]  
-y\_partially\_propagated = y\_propagated\[partially\_propagated\]print(f'Propagated training set shape: {X\_partially\_propagated.shape}')print(f'Propagation accuracy: {np.mean(y\_partially\_propagated == y\_train\[partially\_propagated\]) \* 100:.2f}%')
+  in_cluster = (kmeans.labels_ == i)  
+  cluster_dist = X_cluster_dist[in_cluster]
+  cutoff_distance = np.percentile(cluster_dist, percentile_closest)  
+  above_cutoff = (X_cluster_dist > cutoff_distance)  
+  X_cluster_dist[in_cluster & above_cutoff] = -1
+  
+partially_propagated = (X_cluster_dist != -1)  
+X_partially_propagated = X_train_tfidf[partially_propagated]  
+y_partially_propagated = y_propagated[partially_propagated]
+
+print(f'Propagated training set shape:
+{X_partially_propagated.shape}')
+
+print(f'Propagation accuracy:\
+ {np.mean(y_partially_propagated == y_train[partially_propagated]) * 100:.2f}%')
 ```
 
-**Figure 13.** Training set with propagated labels and propagation accuracy.
+{{< figure src="/images/posts/efficient_labeling/fig13.png" title="Training set with propagated labels and propagation accuracy" >}}
 
 Label propagation increased our training set to 680 samples, with a propagation accuracy of about 90%. It is important to note that outside of this experimentation scenario you will not have ground truths to verify the quality of your label propagation, and this will always be a trade-off between the number of training samples vs. the quality of labeled data.
 
 Let’s see how it does on our classification algorithms.
 
-```
-**\# Evaluating partially propagated set**  
-evaluate(X\_partially\_propagated, y\_partially\_propagated, X\_val\_tfidf)
+```python
+# Evaluating partially propagated set
+evaluate(X_partially_propagated, y_partially_propagated, X_val_tfidf)
 ```
 
-**Figure 14.** Classification reports on the partially propagated training set.**Table 3.** Evaluation metrics on the partially propagated training set.
+{{< figure src="/images/posts/efficient_labeling/fig14.png" title="Classification reports on the partially propagated training set" >}}
+
+| Classifier          | Accuracy  | F1 Score |
+| :---                |      ---: |     ---: |
+|Logistic Regression  | 71.2%     | 0.649    |
+|K-Nearest-Neighbors  | 68.2%     | 0.650    |
 
 Our accuracy went up to 71.2% on the Logistic Regression (A 9.5% increase), and the F1 Score almost doubled. Meanwhile, our K-Nearest-Neighbors classifier’s accuracy oscillated down to 68.2% (A 0.5% decrease), with no significant change in the F1 Score.
 
 We were able to break 70% accuracy and 0.65 F1 score with **twenty times fewer labeled instances**.
 
+---
 Optimum Number of Clusters
 --------------------------
 
@@ -415,7 +538,9 @@ So far, we have worked with an arbitrarily defined number of clusters K = 300. A
 
 We will also evaluate clustering performance with a Silhouette Width \[7\] metric, as described by the formula:
 
-**Formula 4.** Silhouette Width.
+\begin{equation}
+  S(i) = \frac{b(i)-a(i)}{max[a(i),b(i)]}
+\end{equation}
 
 Where:
 
@@ -429,130 +554,166 @@ In the following code we will iterate through a list of increasing numbers for K
 
 On each run, we will store the initialization number, the mean silhouette score for a given K, and its corresponding cluster characteristics, such as instance labels and distance metrics.
 
-```
+```python
 clusters = {}  
-clusters\['k'\] = \[\]clusters\['init'\] = \[\]  
-clusters\['distances'\] = \[\]  
-clusters\['labels'\] = \[\]  
-clusters\['silhouette\_width'\] = \[\]K\_list = \[20, 30, 40, 50, 75, 100, 125, 150, 175, 200, 250, 300, 400, 500, 750, 1000, 1500, 2000\]**\# Setting NumPy random seed for reproducibility**  
+clusters['k'] = []
+clusters['init'] = []  
+clusters['distances'] = []  
+clusters['labels'] = []  
+clusters['silhouette\_width'] = []
+
+K_list = [20, 30, 40, 50, 75, 100, 125, 150, 175, 200,\
+250, 300, 400, 500, 750, 1000, 1500, 2000]
+
+# Setting NumPy random seed for reproducibility
 np.random.seed(123)  
-for k in K\_list: **\# Fitting 10 random initializations of k-means clustering**  
+for k in K_list:
+  
+  # Fitting 10 random initializations of k-means clustering**  
   tic = time()  
-  silhouette\_list = \[\]  
+  silhouette_list = []  
     
   for i in range(10):  
-    clusters\['k'\].append(k)  
-    clusters\['init'\].append(i + 1)  
-    minibatch\_kmeans  
-    kmeans = KMeans(n\_clusters = k, n\_init = 3)  
-    distances = kmeans.fit\_transform(X\_train\_lsa)  
-    clusters\['distances'\].append(distances)  
-    labels = kmeans.labels\_  
-    clusters\['labels'\].append(labels) silhouette\_width = silhouette\_score(X\_train\_lsa, labels)  
-    clusters\['silhouette\_width'\].append(silhouette\_width)  
-    silhouette\_list.append(silhouette\_width) silhouette\_avg = np.mean(silhouette\_list)  
+    clusters['k'].append(k)  
+    clusters['init'].append(i + 1)
+
+    kmeans = KMeans(n_clusters = k, n_init = 3)  
+    distances = kmeans.fit_transform(X_train_lsa)  
+    clusters['distances'].append(distances)  
+    labels = kmeans.labels_  
+    clusters['labels'].append(labels)
+    
+    silhouette_width = silhouette_score(X_train_lsa, labels)  
+    clusters['silhouette_width'].append(silhouette_width)  
+    silhouette_list.append(silhouette_width)
+    
+  silhouette_avg = np.mean(silhouette_list)  
   toc = time()  
   elapsed = toc - tic print(f"For K = {k}",  
-        f"the average silhouette width is: {silhouette\_avg:.4f}.",  
+        f"the average silhouette width is: {silhouette_avg:.4f}.",  
         f"Elapsed time {elapsed:.3f}s")
 ```
 
-**Figure 15.** Silhouette Width and elapsed time for varying K.
+{{< figure src="/images/posts/efficient_labeling/fig15.png" title="Silhouette Width and elapsed time for varying K" >}}
 
 We can see that our **average silhouette width increases consistently with an increasing number of clusters**. This indicates that our dataset holds enough semantic diversity to continue clustering even further, but as noted earlier and made evident above, the time complexity is linearly increasing with the number of clusters K.
 
 So let’s fit our classifiers to the representative samples found within each K-Means initialization. In the code below, we will run our evaluation routine on each individual run of our clustering step and store our performance metrics. Since we had multiple independent runs for each value of K, it will be possible to, later on, visualize a confidence interval for our metrics. A naive selection of samples will also be evaluated on each iteration for comparison purposes.
 
-```
-**\# Evaluation routine and comparison with naive labeling method**  
+```python
+# Evaluation routine and comparison with naive labeling method
 eval = {}  
-eval\['k'\] = \[\]  
-eval\['init'\] = \[\]  
-eval\['classifier'\] = \[\]  
-eval\['method'\] = \[\]  
-eval\['representatives'\] = \[\]  
-eval\['f1\_score'\] = \[\]  
-eval\['accuracy'\] = \[\]for k, init, distance in zip(clusters\['k'\], clusters\['init'\], clusters\['distances'\]):  
-  eval\['k'\].append(k)  
-  eval\['init'\].append(init) representatives = np.argmin(distance, axis = 0)  
-  eval\['representatives'\].append(representatives)  
-  X\_representative\_tfidf = X\_train\_tfidf\[representatives\]  
-  y\_representative = raw\_data.loc\[representatives, 'target'\] **# Representative Labeling - Accuracy and F1 score**  
-  log\_r\_f1, log\_r\_acc, knn\_c\_f1, knn\_c\_acc = evaluate(X\_representative\_tfidf,  
-         y\_representative,  
-         X\_val\_tfidf,  
-         classif\_report = False) **# Logistic Regression**  
-  eval\['classifier'\].append('Logistic Regression')  
-  eval\['method'\].append('Representative Labeling')  
-  eval\['f1\_score'\].append(log\_r\_f1)  
-  eval\['accuracy'\].append(log\_r\_acc)  
+eval['k'] = []  
+eval['init'] = []  
+eval['classifier'] = []  
+eval['method'] = []  
+eval['representatives'] = []  
+eval['f1\_score'] = []  
+eval['accuracy'] = []
+
+for k, init, distance in zip(clusters['k'], clusters['init'], clusters['distances']):  
+  eval['k'].append(k)  
+  eval['init'].append(init) representatives = np.argmin(distance, axis = 0)  
+  eval['representatives'].append(representatives)  
+  X_representative_tfidf = X_train_tfidf[representatives]  
+  y_representative = raw_data.loc[representatives, 'target']
+  
+  # Representative Labeling - Accuracy and F1 score
+  log_r_f1, log_r_acc, knn_c_f1, knn_c_acc = evaluate(X_representative_tfidf,  
+         y_representative,  
+         X_val_tfidf,  
+         classif_report = False)
+  
+  # Logistic Regression
+  eval['classifier'].append('Logistic Regression')  
+  eval['method'].append('Representative Labeling')  
+  eval['f1_score'].append(log_r_f1)  
+  eval['accuracy'].append(log_r_acc)  
     
- **# KNN Classifier**  
-  eval\['k'\].append(k)  
-  eval\['init'\].append(init)  
-  eval\['representatives'\].append(representatives)  
-  eval\['classifier'\].append('KNN Classifier')  
-  eval\['method'\].append('Representative Labeling')  
-  eval\['f1\_score'\].append(knn\_c\_f1)  
-  eval\['accuracy'\].append(knn\_c\_acc) **# Naive Labeling - Accuracy and F1 score**  
-  log\_r\_f1\_n, log\_r\_acc\_n, knn\_c\_f1\_n, knn\_c\_acc\_n = evaluate(X\_train\_tfidf\[:k\],  
-         y\_train\[:k\],  
-         X\_val\_tfidf,  
-         classif\_report = False) **# Logistic Regression**  
-  eval\['k'\].append(k)  
-  eval\['init'\].append(init)  
-  eval\['representatives'\].append(representatives)  
-  eval\['classifier'\].append('Logistic Regression')  
-  eval\['method'\].append('Naive Labeling')  
-  eval\['f1\_score'\].append(log\_r\_f1\_n)  
-  eval\['accuracy'\].append(log\_r\_acc\_n) **# KNN Classifier**  
-  eval\['k'\].append(k)  
-  eval\['init'\].append(init)  
-  eval\['representatives'\].append(representatives)  
-  eval\['classifier'\].append('KNN Classifier')  
-  eval\['method'\].append('Naive Labeling')  
-  eval\['f1\_score'\].append(knn\_c\_f1\_n)  
-  eval\['accuracy'\].append(knn\_c\_acc\_n)**\# clusters and eval as dataframes**  
-eval\_df = pd.DataFrame(eval)  
-clusters\_df = pd.DataFrame(clusters)
+  # KNN Classifier
+  eval['k'].append(k)  
+  eval['init'].append(init)  
+  eval['representatives'].append(representatives)  
+  eval['classifier'].append('KNN Classifier')  
+  eval['method'].append('Representative Labeling')  
+  eval['f1_score'].append(knn_c_f1)  
+  eval['accuracy'].append(knn_c_acc)
+  
+  # Naive Labeling - Accuracy and F1 score
+  log_r_f1_n, log_r_acc_n, knn_c_f1_n, knn_c_acc_n = evaluate(X_train_tfidf[:k],  
+         y_train[:k],  
+         X_val_tfidf,  
+         classif_report = False)
+         
+  # Logistic Regression
+  eval['k'].append(k)  
+  eval['init'].append(init)  
+  eval['representatives'].append(representatives)  
+  eval['classifier'].append('Logistic Regression')  
+  eval['method'].append('Naive Labeling')  
+  eval['f1_score'].append(log_r_f1_n)  
+  eval['accuracy'].append(log_r_acc_n)
+  
+  # KNN Classifier
+  eval['k'].append(k)  
+  eval['init'].append(init)  
+  eval['representatives'].append(representatives)  
+  eval['classifier'].append('KNN Classifier')  
+  eval['method'].append('Naive Labeling')  
+  eval['f1_score'].append(knn_c_f1_n)  
+  eval['accuracy'].append(knn_c_acc_n)
+  
+# clusters and eval as dataframes
+eval_df = pd.DataFrame(eval)  
+clusters_df = pd.DataFrame(clusters)
 ```
 
 We can now start to plot our results to better visualize the effects of K on our model performances.
 
-```
-**\# KNN vs. Logistic Regression  
-\# Accuracy  
-**plt.figure(figsize = (12, 8))  
+```python
+# KNN vs. Logistic Regression  
+# Accuracy  
+plt.figure(figsize = (12, 8))  
 sns.lineplot(x = "k", y = "accuracy", hue = "classifier",  
-             style = "method", data = eval, markers = True)**\# Horizontal line at K = 900**  
+             style = "method", data = eval, markers = True)
+             
+# Horizontal line at K = 900
 plt.axvline(x = 900, color = "k", dashes = (3, 1), linewidth = 2, zorder = 0)  
-plt.text(920, 0.455, "K = 900", size = 12, fontweight = "bold")**\# Anotation at K = 1000**  
+plt.text(920, 0.455, "K = 900", size = 12, fontweight = "bold")
+
+# Anotation at K = 1000
 plt.scatter(1000, 0.735, marker = "v", c = "C0", alpha = 0.7, s = 120, zorder = 3)  
-plt.text(1000, 0.743, "K = 1000", size = 11, fontweight = "bold", c = "C0", horizontalalignment = "center")  
-plt.suptitle("KNN Classifier vs. Logistic Regression", size = 14, fontweight = 'bold', y = 0.94)  
+plt.text(1000, 0.743, "K = 1000", size = 11, fontweight = "bold",
+         c = "C0", horizontalalignment = "center")  
+plt.suptitle("KNN Classifier vs. Logistic Regression",
+         size = 14, fontweight = 'bold', y = 0.94)  
 plt.title("Classification Accuracy")  
 plt.ylabel("Accuracy")  
 plt.xlabel("Number of clusters K")  
 plt.show()
 ```
 
-**Figure 16.** KNN Classifier vs. Logistic Regression — Classification Accuracy.
+{{< figure src="/images/posts/efficient_labeling/fig16.png" title="KNN Classifier vs. Logistic Regression — Classification Accuracy" >}}
 
-```
-**\# F-1 Score**  
+```python
+# F-1 Score**  
 plt.figure(figsize = (12, 8))  
 sns.lineplot(x = "k", y = "f1\_score", hue = "classifier",  
-             style = "method", data = eval, markers = True)**\# Anotation at K = 300**  
+             style = "method", data = eval, markers = True)
+             
+# Anotation at K = 300
 plt.scatter(300, 0.665, marker = "v", c = "C1", alpha = 0.7, s = 120, zorder = 3)  
-plt.text(300, 0.685, "K = 300", size = 11, fontweight = "bold", c = "C1", horizontalalignment = "center")  
-plt.suptitle("KNN Classifier vs. Logistic Regression", size = 14, fontweight = 'bold', y = 0.94)  
+plt.text(300, 0.685, "K = 300", size = 11, fontweight = "bold",
+         c = "C1", horizontalalignment = "center")  
+plt.suptitle("KNN Classifier vs. Logistic Regression",
+         size = 14, fontweight = 'bold', y = 0.94)  
 plt.title("F-1 Score")  
 plt.ylabel("F-1 Score")  
 plt.xlabel("Number of clusters K")  
 plt.show()
 ```
 
-**Figure 17.** KNN Classifier vs. Logistic Regression — F1 Score.
+{{< figure src="/images/posts/efficient_labeling/fig17.png" title="KNN Classifier vs. Logistic Regression — F1 Score" >}}
 
 The plots show the results for both classifiers trained with samples selected naively (dashed lines) and with representative sampling (continuous line). The shaded area around the plot curve illustrates the 95% confidence interval of the ten independent initializations of the clustering algorithm.
 
@@ -560,6 +721,7 @@ It is evident that the representative labeling method results in a **stable perf
 
 Another interesting takeaway is the significant drop in performance from 500 to 1000 naively selected training samples. What might be counter-intuitive is illustrated here, showing that you can double your labeling efforts and eventually end up with worse model performance.
 
+---
 Interpreting Clustering Results
 -------------------------------
 
@@ -571,7 +733,7 @@ Since the coding of some of the following plots can be somewhat extensive, I wil
 
 If you recall from our Silhouette Width definition, it is measured on an _instance level_. As a result, we can visualize where are our best clusters in terms of average silhouette score and look at their distribution through a silhouette width plot. Below is the plot of our training set when K = 50 (therefore, 50 clusters) on its best K-Means run (initialization 7).
 
-**Figure 18.** Silhouette Widths for K = 50, initialization 7.
+{{< figure src="/images/posts/efficient_labeling/fig18.png" title="Silhouette Widths for K = 50, initialization 7" >}}
 
 The clusters are color-coded and enumerated from 1 to 50, and in the chart, you can also see the respective cluster sizes underneath their labels.
 
@@ -581,43 +743,44 @@ On the other hand, large and underperforming clusters (with a negative average s
 
 Let’s take a look at some of the well-defined examples with higher average silhouette scores.
 
-```
-**\# Investigating cluster 12**  
-investigate\_df = clusterTweets(k = 50, cluster = 12).head(10)  
-for y, tweet in zip(investigate\_df\['ground\_truth'\], investigate\_df\['tweet'\]):  
+```python
+# Investigating cluster 12
+investigate_df = clusterTweets(k = 50, cluster = 12).head(10)  
+for y, tweet in zip(investigate_df['ground_truth'], investigate_df['tweet']):  
   print(y, tweet)
 ```
 
-**Figure 19.** Cluster 12 tweets under K = 50, initialization 7.
+{{< figure src="/images/posts/efficient_labeling/fig19.png" title="Cluster 12 tweets under K = 50, initialization 7" >}}
 
 With a perfect silhouette score of 1.0, we can see that cluster 12 captured the spam of identical tweets talking about the same disaster event, in this case, a sandstorm hitting an airport.
 
-```
-**\# Investigating cluster 15**  
-investigate\_df = clusterTweets(k = 50, cluster = 15).head(10)  
-for y, tweet in zip(investigate\_df\['ground\_truth'\], investigate\_df\['tweet'\]):  
+```python
+# Investigating cluster 15
+investigate_df = clusterTweets(k = 50, cluster = 15).head(10)  
+for y, tweet in zip(investigate_df['ground_truth'], investigate_df['tweet']):  
   print(y, tweet)
 ```
 
-**Figure 20.** Cluster 15 tweets under K = 50, initialization 7.
+{{< figure src="/images/posts/efficient_labeling/fig20.png" title="Cluster 15 tweets under K = 50, initialization 7" >}}
 
 Meanwhile, cluster 15’s tweets are mostly about a [train derailment in Madhya Pradesh](https://en.wikipedia.org/wiki/Harda_twin_train_derailment#:~:text=On%204%20August%202015%2C%20two,and%20100%20people%20were%20injured.).
 
-```
-**\# Investigating cluster 18**  
-investigate\_df = clusterTweets(k = 50, cluster = 18).head(10)  
-for y, tweet in zip(investigate\_df\['ground\_truth'\], investigate\_df\['tweet'\]):  
+```python
+# Investigating cluster 18
+investigate_df = clusterTweets(k = 50, cluster = 18).head(10)  
+for y, tweet in zip(investigate_df['ground_truth'], investigate_df['tweet']):  
   print(y, tweet)
 ```
 
-**Figure 21.** Cluster 18 tweets under K = 50, initialization 7.
+{{< figure src="/images/posts/efficient_labeling/fig21.png" title="Cluster 18 tweets under K = 50, initialization 7" >}}
 
 And cluster 18 grouped the tweets about the finding of the debris of the tragic [Malaysia Airlines Flight 370](https://en.wikipedia.org/wiki/Malaysia_Airlines_Flight_370).
 
 I have also set up a biplot and an auxiliary function to visualize the LSA components where each cluster had been most distinctively represented. Below is the biplot for the LSA components 10 and 13 (Out of our 652), where cluster 18 is noticeably shifted towards the upper right quadrant.
 
-**Figure 22.** Clustering biplot of LSA components (10, 13).
+{{< figure src="/images/posts/efficient_labeling/fig22.png" title="Clustering biplot of LSA components (10, 13)" >}}
 
+---
 Conclusions
 -----------
 
@@ -625,7 +788,9 @@ It is now easy to build an intuition about what our representative sampling meth
 
 In these final bar charts, we can summarize our improvements in performance metrics. For K = 300 and K = 1000, I have plotted a side-by-side comparison between the Representative Labeling and Naive Labeling methods for both classifiers.
 
-**Figure 23.** Representative vs. Naive labeling barplot. Logistic Regression.**Figure 24.** Representative vs. Naive labeling barplot. KNN Classifier.
+{{< figure src="/images/posts/efficient_labeling/fig23.png" title="Representative vs. Naive labeling barplot. Logistic Regression." >}}
+
+{{< figure src="/images/posts/efficient_labeling/fig24.png" title="Representative vs. Naive labeling barplot. KNN Classifier." >}}
 
 Besides the evident improvements, it is important to end this article with some considerations. When implementing a similar approach for your own studies, bear in mind that:
 
@@ -637,6 +802,7 @@ Besides the evident improvements, it is important to end this article with some 
 
 And that concludes our analysis of clustering for representative labeling with unstructured text data. You can find the development jupyter notebook on the [project repository](https://github.com/erich-hs/Tweets-Semi-Supervised) or directly through this [link](https://github.com/erich-hs/Tweets-Semi-Supervised/blob/master/Tweets_Semi_Supervised.ipynb). I hope you learned as much as I did while going through this study.
 
+---
 References
 ----------
 

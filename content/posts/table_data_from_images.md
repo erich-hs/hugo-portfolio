@@ -3,13 +3,13 @@ title: "Table Data from Images — Clustering for Layout Matching"
 tags: ['Computer Vision', 'OCR', 'Web Scraping']
 date: 2022-09-15T11:57:32-08:00
 draft: false
+
+featuredImagePreview: "/images/posts/table_data_from_images/fig1.png"
 ---
+{{< figure src="/images/posts/table_data_from_images/fig1.png" >}}
+_On the left: [Canada Rent Rankings — May 2022](https://rentals.ca/blog/rentals-ca-may-2022-rent-report). Report summary by [Rentals.ca](https://rentals.ca/). On the right: Preprocessed image with cluster-defined table layout._
 
-Table Data from Images — Clustering for Layout Matching
-=======================================================
-
-**Figure 1.** On the left: [Canada Rent Rankings — May 2022](https://rentals.ca/blog/rentals-ca-may-2022-rent-report). Report summary by [Rentals.ca](https://rentals.ca/). On the right: Preprocessed image with cluster-defined table layout.
-
+---
 A crucial step in document parsing and recognition tasks, extracting table data from image and pdf files has been a widely explored problem with its own challenges. While working on a small personal project, I dived deep into it to discover a wide range of solutions with varying complexity. What, at first, seemed to be a simple task turned out to be an exciting learning opportunity.
 
 Typical table parsing and recognition approaches use [R-CNNs](https://arxiv.org/pdf/1311.2524.pdf) (Such as [CascadeTabNet](https://github.com/DevashishPrasad/CascadeTabNet) and [RetinaNet](https://github.com/jabhinav/RetinaNet-for-Table-Detection)) that can leverage large public datasets such as [TableBank](https://github.com/doc-analysis/TableBank) or those made available during [ICDAR competitions](https://icdar2023.org/). Most successful frameworks often lead to a **precise table detection and layout recognition step**, followed by an **optical character recognition** process.
@@ -82,6 +82,7 @@ images = glob('data/\*.png')
 images
 ```
 
+{{< figure src="/images/posts/table_data_from_images/xxxx.png" title="" >}}
 **Figure 2.** Monthly report images dataset.
 
 The sample image used to illustrate this article is hosted on this [link](https://images.rentals.ca/images/Rent_Report_-_May_2022_.width-720.png), and the [complete dataset](https://github.com/erich-hs/Canada-Rents/tree/main/data/rentals.ca/monthly-reports) can be found on my GitHub repository. _The images were manually collected from the public blog posts at Rentals.ca/blog_ \[6\]_. I hold no proprietary rights to its content, and they are intended for personal use only._

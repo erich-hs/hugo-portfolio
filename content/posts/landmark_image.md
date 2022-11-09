@@ -3,17 +3,18 @@ title: "Metric Learning for Landmark Image Recognition"
 tags: ['Computer Vision', 'Metric Learning']
 date: 2022-10-31T11:57:32-08:00
 draft: false
+
+featuredImagePreview: "/images/posts/landmark_image/Colosseum_by_Hank_Paul.jpg"
 ---
+{{< figure src="/images/posts/landmark_image/Colosseum_by_Hank_Paul.jpg" title="Colosseum by Hank Paul on Unsplash" >}}
 
-<!-- Metric Learning for Landmark Image Recognition
-============================================== -->
-A complete TensorFlow implementation of global descriptors similarity search with local feature re-ranking
 
-![Colosseum](/images/posts/landmark_image/Colosseum_by_Hank_Paul.jpg)
-**Figure 1.** Colosseum — Photo by [Hank Paul](https://unsplash.com/@henrypaulphotography?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText) on [Unsplash](https://unsplash.com/@henrypaulphotography?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText")
+**A complete TensorFlow implementation of global descriptors similarity search with local feature re-ranking.**
 
+---
 Metric learning for instance recognition and information retrieval is a technique that has been widely implemented across multiple fields. It is a concept that is highly relevant to novel applications in research, such as the latest AI breakthrough in biology \[2\] with [AlphaFold](https://www.nature.com/articles/s41586-021-03819-2) \[11\] by DeepMind, and also mature and well-proven to see vast implementation in the industry, from contextual information retrieval in Google Search \[12\], to image similarity for face recognition \[7\], that you might use every day to unlock your phone. In this article, I will go through a complete example of an image querying architecture that is the foundation of modern solutions to one of today’s challenges in computer vision — **Landmark recognition**.
 
+---
 The Goal of this Article
 ------------------------
 
@@ -21,6 +22,7 @@ In this article introduction, I listed some examples that should give you an ide
 
 The solution to this problem can be divided into two tasks: _Image retrieval_ and _instance recognition_. The task of retrieval is to rank images in an index set according to their relevance to a query image. The recognition task is to identify which specific instance of an object class (_e.g._ the instance “Mona Lisa” of the object class “painting”) is shown in a query image \[8\]. As shown in the benchmarks of the [GLDv2 dataset paper](https://arxiv.org/abs/2004.01804), state-of-the-art approaches use some extent of **global feature similarity search** paired with **local feature matching re-ranking**. Here, I aim to explain, illustrate and implement these concepts, and I hope to give you a clearer idea of how to extend them to your own applications.
 
+---
 Google Landmarks Dataset v2
 ---------------------------
 
@@ -31,29 +33,25 @@ To define a new challenging benchmark, the GLDv2 was proposed as the largest dat
 1.  **Extremely skewed class distribution**. While famous landmarks might have tens of thousands of image samples, 57% of classes have at most ten images, and 38% of classes have at most five images.
 2.  **Intra-class variability**. Landmarks have views from different vantage points and of different details, as well as both indoor and outdoor views of buildings.
 
-![gldv2](/images/posts/landmark_image/gldv2.png)
-
-
-**Figure 2.** Google Landmarks Dataset v2 long-tailed class distribution \[8\].
+{{< figure src="/images/posts/landmark_image/gldv2.png" title="Google Landmarks Dataset v2 long-tailed class distribution [8]" >}}
 
 While this article, for illustrative purposes, will use a **subset with 75 classes and 11,438 landmark pictures** from the original GLDv2 training set, we will still have to deal with some of the challenges above.
 
 With the release of GLDv2 (and the previous GLDv1), Google sponsored a series of Kaggle competitions, including [the 2020 edition](https://www.kaggle.com/c/landmark-recognition-2020) \[9\], in which top-ranked solutions inspired the architecture illustrated here. If you want to know more about the GLDv2, I recommend going through the [dataset repository](https://github.com/cvdfoundation/google-landmark) and [paper](https://arxiv.org/abs/2004.01804). You can also explore the dataset visually [here](https://storage.googleapis.com/gld-v2/web/index.html).
 
+---
 Baseline Architecture
 ---------------------
 
 Our model architecture was adapted from the [2020 Recognition challenge winner](https://arxiv.org/abs/2010.01650) \[10\] and [2019 Recognition challenge 2nd place](https://arxiv.org/abs/1906.03990) \[5\] papers and can be seen as a baseline solution to the landmark recognition task. The diagram below illustrates the training and retrieval routines with global feature search with local feature leverage for reranking, which we will cover in detail in the following sections.
+{{< figure src="/images/posts/landmark_image/Architecture.PNG" title="Landmark recognition baseline architecture. Diagram by the author." >}}
 
-![architecture1](/images/posts/landmark_image/Architecture.PNG)
-
-
-**Figure 3.** Landmark recognition baseline architecture. Diagram by the author.
 
 Google also optimized a similar architecture into the unified model DEep Local and Global features (DELG) \[4\]. I dedicated a short section where you can read more about it later on.
 
 My complete Kaggle notebook with all the code in this article can be found [here](https://www.kaggle.com/code/erichhenrique/gldv2-2020-efficientnet-and-delf-reranking-tf/notebook). Consider leaving an upvote if you find it useful.
 
+---
 Libraries and Dependencies
 --------------------------
 
@@ -61,134 +59,73 @@ Our implementation will use TensorFlow 2 and OpenCV as our core libraries. Aroun
 
 Hosted notebook instances at Google Collab and Kaggle Notebooks come with all needed libraries pre-installed. For this mini project, however, I recommend working at a [Kaggle Notebook](https://www.kaggle.com/code) due to the easy access to the complete GLDv2 dataset without the need to download it (Especially if you want to experiment on the complete dataset, which is 105 GB in size).
 
+---
 Getting Started
 ---------------
 
 To get started, we can confirm that our working environment is set up to run with GPU acceleration. You can verify if it is GPU enabled and check what is the current CUDA version with the bash command `nvida-smi`. With that done, we can start by importing our libraries.
 
-```python
-# Importing libraries
-import os
-import cv2
-import shutil
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-from absl import logging
-from PIL import Image, ImageOps
-from skimage.feature import plot_matches
-from skimage.measure import ransac
-from skimage.transform import AffineTransform
-from six import BytesIO
-from scipy import spatial
-from scipy.spatial import cKDTree
-from tqdm import tqdm
-import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras import layers
-from tensorflow.keras.applications import EfficientNetB0
-from sklearn.model_selection import train_test_split
-```
+{{< gist erich-hs 458be88d325ffbe51435de13a744c81d >}}
 
 We can now define our dataset directory and .csv path. If you are working inside the Kaggle environment for the competition, the data will be distributed in a train and test folder, where each image is placed within three subfolders according to the first three characters of the image `id` (i.e. image `abcdef.jpg` is placed in `a/b/c/abcdef.jpg`). The directory also contains a train.csv file with training labels.
 
-![data-exp](/images/posts/landmark_image/data-exp.png)
-
-
-**Figure 4.** Kaggle GLDv2 folder structure.
+{{< figure src="/images/posts/landmark_image/data-exp.png" title="Kaggle GLDv2 folder structure." >}}
 
 We will proceed by reading the train.csv file and defining a column with the training image paths derived from their respective `id`.
 
-```python
-# Directories and file paths
-TRAIN_DIR = '../input/landmark-recognition-2020/train'
-TRAIN_CSV = '../input/landmark-recognition-2020/train.csv'
-train_df = pd.read_csv(TRAIN_CSV)
-
-TRAIN_PATHS = [os.path.join(TRAIN_DIR,\
-    f'{img[0]}/{img[1]}/{img[2]}/{img}.jpg')\
-    for img in train_df['id']]
-train_df['path'] = TRAIN_PATHS
-
-train_df
-```
-
-![train-df](/images/posts/landmark_image/train_df.png)
-
-
-**Figure 5.** Train DataFrame with image paths.
+{{< gist erich-hs 150a5fd5225398de1e1a3eea88319b03 >}}
+{{< figure src="/images/posts/landmark_image/train_df.png" title="Train DataFrame with image paths" >}}
 
 We will then define our subset to work with. We will work on a small subset of the data to keep the experiments manageable in a feasible amount of time, both for training and retrieval with cosine similarity search. This subset is defined by landmarks with at least 150 and no more than 155 images per class. We will also assign a new, more interpretable landmark id to each class.
 
-```python
-# Subsetting
-train_df_grouped = pd.DataFrame(train_df.landmark_id.value_counts())
-train_df_grouped.reset_index(inplace=True)
-train_df_grouped.columns = ['landmark_id','count']
-
-# Selected landmarks based on inclass frequency
-selected_landmarks = train_df_grouped[(train_df_grouped['count'] <= 155) & \
-    (train_df_grouped['count'] >= 150)]
-
-train_df_sub=train_df[train_df['landmark_id'].isin(selected_landmarks['landmark_id'])]
-new_id = []
-current_id = 0
-previous_id = int(train_df_sub.head(1)['landmark_id'])
-for landmark_id in train_df_sub['landmark_id']:
-    if landmark_id == previous_id:
-        new_id.append(current_id)
-    else:
-        current_id += 1
-        new_id.append(current_id)
-        previous_id = landmark_id
-
-train_df_sub['new_id'] = new_id
-
-NUM_CLASSES = train_df_sub['landmark_id'].nunique()
-train_df_sub
-```
-
-![subset](/images/posts/landmark_image/subset.png)
-
-
-**Figure 6.** Subset with 11438 rows and 75 landmark classes.
+{{< gist erich-hs 238c65da2a10adae83802196ed0b7660 >}}
+{{< figure src="/images/posts/landmark_image/subset.png" title="Subset with 11,438 rows and 75 landmark classes" >}}
 
 We went down from 1,580,470 images to 11,438 distributed into 75 distinct landmark classes. If you want to take the challenge head-on and work on the complete dataset, there will be some optimization implementations that I recommend, especially in the cosine similarity search, but we will discuss this in a later section. For now, let's focus on the theory and core implementation of our baseline model.
 
+---
 Training, Test, and Validation Split
 ------------------------------------
 
 We will do a stratified split to define our training, validation, and test sets. For that, we will use the sciki-learn `train_test_split` method while passing our label to the `stratify` argument. It will ensure that each of the 75 classes in our subset will be present at the training, validation, and test sets after the split.
 
-**Figure 7.** Training, validation, and test shapes.
+{{< gist erich-hs 123f69efb4ba4786b7eb9b37d28fc0a7 >}}
+{{< figure src="/images/posts/landmark_image/shapes.png" title="Training, validation, and test shapes" >}}
 
 And we can now confirm that it is evenly distributed with some histograms on each subset.
 
-**Figure 8.** Stratified training, validation, and test split distribution.
+{{< gist erich-hs 3ced69316a0479cec7233ec2ed455fd2 >}}
+{{< figure src="/images/posts/landmark_image/histograms.png" title="Stratified training, validation, and test split distribution" >}}
 
 So far, we have been working on our DataFrame generated from the train.csv file. Now we have to deal with the actual images from the dataset. We will start by defining a new folder structure that places each of our subset images into a directory named after the landmark id. It is an important step that will allow us to use the TensorFlow `image_dataset_from_directory` function to create `tf.data.Dataset` objects.
 
+{{< gist erich-hs 5a57bc6353c1caf3a42497fb5c275a3e >}}
+
 We can now check that our new folder structure is in place.
 
-**Figure 9.** New image directories.
+{{< figure src="/images/posts/landmark_image/directories.png" title="New image directories" >}}
 
 And finally, create TensorFlow `tf.data.Dataset` from our training, test, and validation sets. They are objects that make data streaming throughout our pipeline highly efficient and will certainly help with performance moving forward.
 
 The function `image_dataset_from_directory` can preprocess our image by resizing it with the `image_size` argument and pre-set our batch sizes for training and validation. So we will define these parameters as well.
 
+{{< gist erich-hs 02485afc70cb10efe9c18a8a3a2a398a >}}
+
 Now our data is ready to work with. You can take a look at one of the training batches with the `.take()` method from the `dataset` object. Remember that our subsets were shuffled during our initial split.
 
-**Figure 10.** Sample batch from the training dataset.
+{{< gist erich-hs e988b54a36e2db125f7d19eab3322af9 >}}
+{{< figure src="/images/posts/landmark_image/landmark-batch.png" title="Sample batch from the training dataset" >}}
 
 From here, you can see that some of the challenges idealized for the GLDv2 dataset are still present in our subset. With high intra-class variability, we can see pictures from the same landmark that were taken from indoor and outdoor views. There are also photos with indirect relevance to its class, such as the one from _landmark 41_ in the image above, representing a museum piece that is probably inside the actual landmark depicted in the dataset.
 
+---
 Augmentation Layer
 ------------------
 
 We will use image augmentation to help with generalization and keep the model from overfitting to the training data. With knowledge of the nature of our problem, we can define what works and what does not in this step. An ideal landmark recognition and retrieval model should be able to identify the place on an instance level from non-professional pictures taken from different angles. The following code snippet will define a basic augmentation layer that applies random translation, random rotation, and random zoom to the training image. It is important to notice that the augmentation layer is bypassed during inference, which means it will only preprocess the images during training steps. With that in mind, we can take a look at one augmentation example by passing `training = True` to our augmentation layer.
 
-**Figure 11.** Sample augmentation step.
+{{< gist erich-hs 3e7c5992b718a8f3a336f23336b77c3c >}}
+{{< figure src="/images/posts/landmark_image/augmentation.png" title="Sample augmentation step" >}}
 
 One common augmentation we will refrain from using here is randomly mirroring or flipping the images on their vertical axis. While we know that our model should be translation and viewpoint invariant (it should be able to identify landmark instances at distinct locations in the picture and under different points of view), it should not be invariant to vertical symmetry. While some landmarks might, indeed, be symmetric around their vertical axis, most of them are not.
 
@@ -196,12 +133,13 @@ On the other hand, one augmentation technique that has proven to improve model p
 
 With our augmentation layer in place, we can now define our classification model.
 
+---
 Global Descriptor
 -----------------
 
 If you peek back at our model architecture, you will notice one instrumental fact about similarity search with metric learning — It is not directly from our classification model that we infer the landmark label of a queried image. In this section, we will set up a pre-trained EfficientNet and use it to train our **embedding layer**, which we will later use to encode our query and key images into a 512-dimensional feature vector.
 
-**Figure 12.** Global descriptor training architecture.
+{{< figure src="/images/posts/landmark_image/partial-architecture-1.png" title="Global descriptor training architecture" >}}
 
 The embedding layer will be the one responsible for our **global descriptors**, and the diagram above shows the training architecture of our **global retrieval model**.
 
@@ -209,16 +147,21 @@ But what is a global image descriptor? In simple terms, it is an n-dimensional v
 
 While the following model will not be used for inference, the quality of our global descriptors is directly related to the classification model performance. For the highest-ranked solutions in recognition and retrieval competitions, these embedding layers are often trained on an ensemble of multiple ResNet CNNs. In the following example, we will implement a simple solution with a pre-trained EfficientNetB0, also known as a _backbone block_. Our classification head is then rebuilt on top of an Average Pooling, a Batch Normalization, and a Dropout layer for regularization.
 
+{{< gist erich-hs b84860fe896abd57b9e41acdec80d046 >}}
+
 The embedding layer is built right before the Sotfmax classification layer. It is also named `embedding_512` for later use. Notice how we freeze our EfficientNet block to keep the pre-trained weights. For improved performance, you can also fine-tune the top layers in your backbone (there is a section on fine-tuning in this [guide to transfer learning](https://keras.io/guides/transfer_learning/) in Keras documentation). We will keep it simple and proceed to train with an ADAM optimizer and a learning rate scheduler.
 
-**Figure 13.** Train and validation loss.
+{{< gist erich-hs 8272454baa402bc0d9dd3c4c47f1c6e1 >}}
+{{< figure src="/images/posts/landmark_image/loss.png" title="Train and validation loss" >}}
 
 And evaluate the best model performance.
 
-**Figure 14.** Best model performance in the validation and test set.
+{{< gist erich-hs f30aa6758030ff26965bdb7f150e25a4 >}}
+{{< figure src="/images/posts/landmark_image/performance.png" title="Best model performance in the validation and test set" >}}
 
 With that, we have a trained embedding layer that we can now use to generate our global descriptors. This leads us to our retrieval step.
 
+---
 Cosine Similarity
 -----------------
 
@@ -226,19 +169,23 @@ The core concept of metric learning revolves around the optimization of a _param
 
 But the concept is not always straightforward. The example below from _“Similarity and Distance Metric Learning with Applications to Computer Vision.”_ (Bellet, A. et al. 2015) \[1\] illustrates a qualitative judgment that is not often directly quantifiable. These are the cases where supervised metric learning can be used to its best.
 
-**Figure 15.** Example of a qualitative judgement fitting to a metric learning task. \[1\]
+{{< figure src="/images/posts/landmark_image/metric-example.png" title="Example of a qualitative judgement fitting to a metric learning task [1]" >}}
 
 With the judgement defined, we can then implement a model architecture that is able to solve this optimization problem. In our example, we will use a **cosine similarity** as our distance metric, and as mentioned previously, the optimization occurs during the training of our global descriptor. The better (most descriptive) our embedding layers is, the closer we get to an optimum solution to our problem.
 
-**Figure 16.** Similarity search with global features in the architecture diagram.
+{{< figure src="/images/posts/landmark_image/partial-architecture-2.png" title="Similarity search with global features in the architecture diagram" >}}
 
 Cosine similarity (or angular cosine distance) is the measurement of the cosine of the angle between two vectors and can be described mathematically as the division between the dot product of vectors and the product of their lengths (or the product of their euclidean norm) \[3\].
 
-**Figure 17.** Cosine Similarity mathematic representation \[3\].
+\begin{equation}
+    Cosine Similarity = \frac{{\sum_{i=1}^{n}{x_iy_i}}} {\sqrt{\sum_{i=1}^{n}{x_i}^{2}} \sqrt{\sum_{i=1}^{n}{y_i}^{2}}}
+\end{equation}
 
 In the formula above, _x_ and _y_ are the components of two independent vectors, and _n_ is their dimension.
 
 In the following snippet, we implement a series of auxiliar functions to load and preprocess individual images, retrieve image embeddings with a given model (to which we will pass our `embedding_512` layer later on), calculate pairwise similarity between a query and a key set, and some visualization functions to plot our most similar candidate images.
+
+{{< gist erich-hs f4d3fb5a9728cfd56feb79de473709ad >}}
 
 > **Note on performance**: The cosine similarity implementation above is based on a simple SciPy sequential CPU run and is intended to be performed individually between a single vectorized query image against all vectorized key samples.
 > 
@@ -246,36 +193,48 @@ In the following snippet, we implement a series of auxiliar functions to load an
 
 For the next examples, we will use our training set as our key images, and from our validation set we will get some query samples. The following code will pass both subsets through out `embedding_layer` with the function `get_embeddings()`. It will generate our 512-dimensional global descriptor for each image.
 
+{{< gist erich-hs c6f74db73728279cdba0ecf9107127ac >}}
+
 So let’s use our `query_top()` function to query some images and visualize the results.
 
-**Figure 18.** Queried image and highest similarity candidates.
+{{< gist erich-hs 92c0726c47c758a2735db65103379d19 >}}
+{{< figure src="/images/posts/landmark_image/similarity1.png" title="Queried image and highest similarity candidates" >}}
 
 We can see from the very first image in our query set that our global descriptor is effective and the results are highly relevant to our query image. They not only returned the correct landmark in all top five candidates but also images with similar vantage points and lighting conditions.
 
 The following function performs a similar search but returns the results as a Pandas DataFrame.
 
+{{< gist erich-hs 375b2b9914c6c9eacb2f8a14757ad199 >}}
+
 That we can use to look at our cosine similarity scores.
 
-**Figure 19.** Highest similarity candidates scores.
+{{< gist erich-hs 60d00ccea2ee4e83fb204b03a37069c8 >}}
+{{< figure src="/images/posts/landmark_image/similarity-df.png" title="Highest similarity candidates scores" >}}
 
 And we can repeat the process with other query image examples.
 
-**Figure 20.** Queried image and highest similarity candidates example.**Figure 21.** Queried image and highest similarity candidates example.**Figure 22.** Queried image and highest similarity candidates example.
+{{< figure src="/images/posts/landmark_image/similarity2.png" title="Queried image and highest similarity candidates example" >}}
+
+{{< figure src="/images/posts/landmark_image/similarity3.png" title="Queried image and highest similarity candidates example" >}}
+
+{{< figure src="/images/posts/landmark_image/similarity4.png" title="Queried image and highest similarity candidates example" >}}
 
 With that, we conclude our similarity search with global features. We have achieved excellent results so far, but let's take a look at an example where global descriptors lack in performance.
 
+---
 Reranking with Local Features
 -----------------------------
 
 Let’s take a look at an example of object occlusion.
 
-**Figure 23.** Landmark occlusion example.
+{{< gist erich-hs aee9062f3e9a90e4a806a748c524e659 >}}
+{{< figure src="/images/posts/landmark_image/occlusion.png" title="Landmark occlusion example" >}}
 
 The landmark is not only occluded but is also occupying a fairly small region in the picture, which is dominated by the tree in the foreground. We can see from the results that it played a major role in the similarity search, and in most top results we also see a big tree in the image.
 
 This is an example where our reranking with local features will play a major role.
 
-**Figure 24.** Reranking with local features in the architecture diagram.
+{{< figure src="/images/posts/landmark_image/partial-architecture-3.png" title="Reranking with local features in the architecture diagram" >}}
 
 We will use a **DEep Local Feature (DELF)** \[13\]  module to extract attentive local feature descriptors from our query image, and compare it to the highest-ranked candidate images selected previously.
 
@@ -283,29 +242,47 @@ DELF is a convolutional neural network model that was trained on images of landm
 
 The following implementation was adapted from the [TensorFlow hub tutorial for the DELF module](https://www.tensorflow.org/hub/tutorials/tf_hub_delf_module). As it is a refinement step, we will set our image size to 600 x 600. The following code will load the pre-trained DELF model from the TensorFlow hub and define some functions to look for inliers (feature matches) between image pairs.
 
+{{< gist erich-hs f1c416a1eb4bae864de23c213b076826 >}}
+
 We can now loop through our previous results to look for inliers.
 
-**Figure 25.** DELF correspondences on candidate images.
+{{< gist erich-hs ae69f19125af63ca3948f67a05a9fe27 >}}
+{{< figure src="/images/posts/landmark_image/delf.png" title="DELF correspondences on candidate images" >}}
 
 Local attentive features, as proposed by the DELF architecture, are powerful descriptors for similarity matching based on geometric attributes. You can see from the results above that, despite the difference in scale and resolution, it was able to identify the relevant features in the building architecture between the correct image pair.
 
 So that leads us to our last step. We will rerank our candidate images from the global similarity search using the number of DELF correspondences found. The following function will recalculate the confidence index (which was previously the cosine similarity) by multiplying its current value by the square root of the number of inliers found using local features.
 
+{{< gist erich-hs 972b83a4695708ec294deb7b2023bcae >}}
+
 We can finally look at the reranked results for our example above.
 
-**Figure 26.** Reranked confidence index.
+{{< gist erich-hs c25b8b9a53f91f8b2af2e315e2cbaddf >}}
+{{< figure src="/images/posts/landmark_image/reranked-df.png" title="Reranked confidence index" >}}
 
-**Figure 27.** Reranked candidate landmarks.
+{{< gist erich-hs b71ddc458a90d9fa4270a0f86ca82ded >}}
+{{< figure src="/images/posts/landmark_image/reranked1.png" title="Reranked candidate landmarks" >}}
 
 With that, we have covered the complete metric learning architecture for landmark recognition with global similarity search and reranking with local features.
 
 I will leave below additional reranking examples and relevant supplementary reading in the following sections.
 
+---
 Reranking Examples
 ------------------
+{{< figure src="/images/posts/landmark_image/reranked2.png" title="Queried image and highest similarity candidates without reranking" >}}
 
-**Figure 28.** Queried image and highest similarity candidates without reranking.**Figure 29.** Reranked results with local features.**Figure 30.** Queried image and highest similarity candidates without reranking.**Figure 31.** Reranked results with local features.**Figure 32.** Queried image and highest similarity candidates without reranking.**Figure 33.** Reranked results with local features.
+{{< figure src="/images/posts/landmark_image/reranked3.png" title="Reranked results with local features" >}}
 
+{{< figure src="/images/posts/landmark_image/reranked4.png" title="Queried image and highest similarity candidates without reranking" >}}
+
+{{< figure src="/images/posts/landmark_image/reranked5.png" title="Reranked results with local features" >}}
+
+{{< figure src="/images/posts/landmark_image/reranked6.png" title="Queried image and highest similarity candidates without reranking" >}}
+
+{{< figure src="/images/posts/landmark_image/reranked7.png" title="Reranked results with local features" >}}
+
+---
 ArcFace Loss
 ------------
 
@@ -320,6 +297,7 @@ Google’s Unified DELG Model
 
 DEep Local and Global Features (DELG — Cao, B. et al. 2020) \[4\] is Google’s proposed unified model that incorporates DELF’s attention module with a much simpler training pipeline that is integrated with global feature retrieval under the same architecture. It is essentially a single-model implementation of the architecture exemplified in this article.
 
+---
 References
 ----------
 
