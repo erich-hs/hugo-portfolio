@@ -32,7 +32,7 @@ ignoreErrors = ["error-remote-getjson", "error-missing-instagram-accesstoken"]
 
 # Author config
 [author]
-    name = "Erich"
+    name = "Erich Henrique"
     email = "erich.hs13@gmail.com"
     link = ""
 
@@ -352,7 +352,7 @@ ignoreErrors = ["error-remote-getjson", "error-missing-instagram-accesstoken"]
             Twitter = true
             Facebook = false
             Linkedin = true
-            Whatsapp = false
+            Whatsapp = true
             Pinterest = false
             Tumblr = false
             HackerNews = false
