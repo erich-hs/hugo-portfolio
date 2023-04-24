@@ -1,15 +1,8 @@
-![Garibaldi](static/images/about/about_banner_garibaldi_lake.jpg)
+[![Azure Static Web Apps CI/CD](https://github.com/erich-hs/hugo-portfolio/actions/workflows/azure-static-web-apps-victorious-ground-06e7f7810.yml/badge.svg)](https://github.com/erich-hs/hugo-portfolio/actions/workflows/azure-static-web-apps-victorious-ground-06e7f7810.yml) ![Website Up](https://img.shields.io/website?down_message=offline&label=esilva.io&up_message=online&url=https%3A%2F%2Fesilva.io)
 ## My Online Portfolio
-[esilva.io](https://esilva.io)
+>## [esilva.io](https://esilva.io)
 
-Hosted at:
-
-![Microsoft Azure](static/images/Microsoft-Azure-logo_resized.png)
-
-* Static Web Apps
-* Azure DNS Zone
-
-Standing on the shoulders of:
+# Standing on the shoulders of
 
 <a href="https://gohugo.io/"><img src="https://raw.githubusercontent.com/gohugoio/gohugoioTheme/master/static/images/hugo-logo-wide.svg?sanitize=true" alt="Hugo" width="565"></a>
 
@@ -21,8 +14,6 @@ A Fast and Flexible Static Site Generator built with love by [bep](https://githu
 [Installation Guide](https://gohugo.io/getting-started/installing/) |
 [Contribution Guide](CONTRIBUTING.md) |
 [Twitter](https://twitter.com/gohugoio)
-
-## Overview
 
 Hugo is a static HTML and CSS website generator written in [Go](https://go.dev/).
 It is optimized for speed, ease of use, and configurability.
@@ -36,3 +27,7 @@ A good rule of thumb is that each piece of content renders in around 1 milliseco
 
 Hugo is designed to work well for any kind of website including blogs, tumbles, and docs.
 
+# Hosted at
+![Microsoft Azure](static/images/Microsoft-Azure-logo_resized.png)
+
+[Static Web Apps](https://azure.microsoft.com/en-us/products/app-service/static) | [Azure DNS Zone](https://learn.microsoft.com/en-us/azure/dns/dns-zones-records)
