@@ -12,8 +12,6 @@ featuredImagePreview: "/images/posts/efficient_labeling/Capa.png"
 
 _On the left: Wildfire — Photo by [Mike Newbry](https://unsplash.com/@mikenewbry?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText). On the center: Tropical Storm — Photo by [Jeffrey Grospe](https://unsplash.com/@jgrospe?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText). On the right: Pandemic Dashboard — Photo by [Martin Sanchez](https://unsplash.com/@martinsanchez?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText). Original images on [Unsplash](https://unsplash.com/?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText)_
 
-
-
 ---
 Cluster analysis as an unsupervised learning technique is widely implemented throughout many fields of data science. When applied to data suited for hierarchical or partitional clustering, it can provide valuable insights into latent groups of the dataset and further improve your understanding of key features that can describe and classify individuals into meaningful clusters for your use case.
 
