@@ -1,15 +1,14 @@
 ---
 title: "Metric Learning for Landmark Image Recognition"
-tags: ['Computer Vision', 'Metric Learning']
+subtitle: "A complete TensorFlow implementation of global descriptors similarity search with local feature re-ranking"
+categories: ['Data Science']
+tags: ['Computer Vision', 'Metric Learning', 'Python']
 date: 2022-10-31T11:57:32-08:00
 draft: false
 
 featuredImagePreview: "/images/posts/landmark_image/Colosseum_by_Hank_Paul.jpg"
 ---
 {{< figure src="/images/posts/landmark_image/Colosseum_by_Hank_Paul.jpg" title="Colosseum by Hank Paul on Unsplash" >}}
-
-
-**A complete TensorFlow implementation of global descriptors similarity search with local feature re-ranking.**
 
 ---
 Metric learning for instance recognition and information retrieval is a technique that has been widely implemented across multiple fields. It is a concept that is highly relevant to novel applications in research, such as the latest AI breakthrough in biology \[2\] with [AlphaFold](https://www.nature.com/articles/s41586-021-03819-2) \[11\] by DeepMind, and also mature and well-proven to see vast implementation in the industry, from contextual information retrieval in Google Search \[12\], to image similarity for face recognition \[7\], that you might use every day to unlock your phone. In this article, I will go through a complete example of an image querying architecture that is the foundation of modern solutions to one of today’s challenges in computer vision — **Landmark recognition**.

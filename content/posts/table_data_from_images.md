@@ -1,6 +1,8 @@
 ---
-title: "Table Data from Images — Clustering for Layout Matching"
-tags: ['Computer Vision', 'OCR', 'Web Scraping']
+title: "Table Data from Images"
+subtitle: "Clustering for Layout Matching"
+categories: ['Data Science']
+tags: ['Computer Vision', 'OCR', 'Web Scraping', 'Python']
 date: 2022-09-15T11:57:32-08:00
 draft: false
 
