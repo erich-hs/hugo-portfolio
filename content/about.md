@@ -123,7 +123,7 @@ Docker, Kubernetes, Snowflake.
 **Azure**: Databricks, Data Factory, Blob Storage
 
 #### Version Control and Agile
-Git, GitHub, Jira, and Confluence
+Git, GitHub, Azure DevOps, Jira, and Confluence
 
 ---
 ## Contact
