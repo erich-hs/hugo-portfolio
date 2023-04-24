@@ -3,6 +3,7 @@
 [esilva.io](https://esilva.io)
 
 Hosted at:
+
 ![Microsoft Azure](static/images/Microsoft-Azure-logo_resized.png)
 
 * Static Web Apps
